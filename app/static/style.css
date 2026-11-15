@@ -1,0 +1,422 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Playfair+Display:ital,wght@0,600;1,500&display=swap');
+
+:root {
+    --bg-canvas: #FAF7F2;
+    --bg-sidebar: #F4EDE3;
+    --bg-card: #FFFFFF;
+    --border-subtle: #EBE3D5;
+    --border-hover: #D8CFBF;
+
+    --sage-50: #F2F6F3;
+    --sage-100: #E3ECE4;
+    --sage-200: #C9DEC7;
+    --sage-300: #AAC7A8;
+    --sage-500: #5A8366;
+    --sage-600: #436A4E;
+    --sage-700: #35553E;
+    --sage-800: #263E2D;
+
+    --text-primary: #231F1A;
+    --text-secondary: #5A5245;
+    --text-muted: #827766;
+
+    /* Priority Tones (Harmonious with Cream & Pastel Sage) */
+    /* High: Warm Terracotta / Artisan Coral Pastel */
+    --priority-high-bg: #FDF3F0;
+    --priority-high-border: #F3D2C9;
+    --priority-high-text: #963826;
+    --priority-high-dot: #D65538;
+
+    /* Medium: Warm Honey / Golden Ochre Pastel */
+    --priority-med-bg: #FAF5E8;
+    --priority-med-border: #EEDEB8;
+    --priority-med-text: #7C5914;
+    --priority-med-dot: #D99F26;
+
+    /* Low: Soft Pastel Sage */
+    --priority-low-bg: #EDF5EE;
+    --priority-low-border: #C8E0CB;
+    --priority-low-text: #284E33;
+    --priority-low-dot: #4E7857;
+}
+
+* {
+    box-sizing: border-box;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+}
+
+body {
+    background-color: var(--bg-canvas);
+    color: var(--text-primary);
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    letter-spacing: -0.012em;
+}
+
+/* Subtle, Elegant Scrollbar */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+::-webkit-scrollbar-thumb {
+    background: #E2D9CC;
+    border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: var(--sage-500);
+}
+
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+.no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+/* Nav Link Styling */
+.nav-link {
+    color: var(--text-secondary);
+    font-weight: 500;
+    transition: all 0.16s ease-in-out;
+    border: 1px solid transparent;
+}
+
+.nav-link:hover {
+    background-color: rgba(235, 227, 213, 0.65);
+    color: var(--text-primary);
+}
+
+.nav-link.active {
+    background-color: #FFFFFF !important;
+    color: var(--sage-700) !important;
+    border-color: var(--border-subtle) !important;
+    font-weight: 600 !important;
+    box-shadow: 0 1px 3px rgba(35, 31, 26, 0.05) !important;
+}
+
+/* Elegant Cards */
+.card-aesthetic {
+    background: #FFFFFF;
+    border: 1px solid var(--border-subtle);
+    border-radius: 1rem;
+    box-shadow: 0 1px 2px rgba(35, 31, 26, 0.03), 0 4px 12px -2px rgba(35, 31, 26, 0.02);
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.card-aesthetic:hover {
+    border-color: var(--border-hover);
+    box-shadow: 0 2px 5px rgba(35, 31, 26, 0.05), 0 8px 20px -3px rgba(35, 31, 26, 0.04);
+}
+
+/* Panel Fade Transitions */
+.view-panel {
+    animation: fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Typing Dots */
+@keyframes pulseDot {
+    0%, 80%, 100% { transform: scale(0.65); opacity: 0.4; }
+    40% { transform: scale(1.15); opacity: 1; }
+}
+
+.typing-dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: var(--sage-600);
+    animation: pulseDot 1.2s infinite ease-in-out both;
+}
+
+.typing-dot:nth-child(1) { animation-delay: -0.32s; }
+.typing-dot:nth-child(2) { animation-delay: -0.16s; }
+
+/* Custom Accordion Summary */
+details > summary {
+    list-style: none;
+}
+details > summary::-webkit-details-marker {
+    display: none;
+}
+
+/* Calendar Date Badge */
+.date-badge {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 3.25rem;
+    height: 3.5rem;
+    border-radius: 0.85rem;
+    background-color: var(--sage-50);
+    border: 1px solid var(--sage-200);
+    flex-shrink: 0;
+    text-align: center;
+}
+.date-badge-month {
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--sage-700);
+    line-height: 1;
+}
+.date-badge-day {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    line-height: 1.1;
+    margin-top: 0.15rem;
+}
+
+/* ============================================== */
+/* Interactive Calendar Grid & Enhanced Coloring   */
+/* ============================================== */
+.cal-grid-header {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 6px;
+    text-align: center;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-secondary);
+    padding: 8px 4px;
+    background-color: #F4EDE3;
+    border-radius: 0.85rem;
+    border: 1px solid #EBE3D5;
+}
+
+.cal-grid {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 6px;
+}
+
+.cal-cell {
+    min-height: 88px;
+    background: #FFFFFF;
+    border: 1px solid var(--border-subtle);
+    border-radius: 0.85rem;
+    padding: 7px 8px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: 3.5px;
+    cursor: pointer;
+    transition: all 0.16s ease-in-out;
+    position: relative;
+    user-select: none;
+}
+
+.cal-cell:hover {
+    border-color: var(--sage-400);
+    box-shadow: 0 3px 8px rgba(35, 31, 26, 0.04);
+    transform: translateY(-1px);
+}
+
+.cal-cell.cal-cell-inactive {
+    opacity: 0.35;
+    background: #FAF7F2;
+}
+
+/* When a day has events: Soft, refined background tints */
+.cal-cell.cal-cell-has-events {
+    background: #FAF8F4;
+    border-color: #DDD4C5;
+}
+
+.cal-cell.cal-cell-has-high {
+    background: linear-gradient(180deg, #FDF4F1 0%, #FFFFFF 100%) !important;
+    border-color: #ECCEC5 !important;
+}
+
+.cal-cell.cal-cell-has-medium {
+    background: linear-gradient(180deg, #FBF8EE 0%, #FFFFFF 100%) !important;
+    border-color: #E8DECA !important;
+}
+
+.cal-cell.cal-cell-has-low {
+    background: linear-gradient(180deg, #F3F8F4 0%, #FFFFFF 100%) !important;
+    border-color: #D2E4D5 !important;
+}
+
+.cal-cell.cal-cell-selected {
+    border-color: var(--sage-600) !important;
+    box-shadow: 0 0 0 2.5px rgba(67, 106, 78, 0.28) !important;
+    background: #FFFFFF !important;
+}
+
+.cal-day-num {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    width: 23px;
+    height: 23px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+}
+
+.cal-day-today {
+    background-color: var(--sage-600);
+    color: #FFFFFF !important;
+    box-shadow: 0 1px 3px rgba(67, 106, 78, 0.3);
+}
+
+/* Event mini-chips in calendar cells */
+.event-chip {
+    font-size: 9.5px;
+    line-height: 1.25;
+    padding: 3px 6px;
+    border-radius: 6px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    border-width: 1px;
+    box-shadow: 0 1px 2px rgba(35, 31, 26, 0.02);
+}
+
+.event-chip-high {
+    background-color: var(--priority-high-bg);
+    color: var(--priority-high-text);
+    border-color: var(--priority-high-border);
+}
+
+.event-chip-medium {
+    background-color: var(--priority-med-bg);
+    color: var(--priority-med-text);
+    border-color: var(--priority-med-border);
+}
+
+.event-chip-low {
+    background-color: var(--priority-low-bg);
+    color: var(--priority-low-text);
+    border-color: var(--priority-low-border);
+}
+
+/* Priority Pills / Badges */
+.priority-pill-high {
+    background-color: var(--priority-high-bg);
+    color: var(--priority-high-text);
+    border: 1px solid var(--priority-high-border);
+}
+
+.priority-pill-medium {
+    background-color: var(--priority-med-bg);
+    color: var(--priority-med-text);
+    border: 1px solid var(--priority-med-border);
+}
+
+.priority-pill-low {
+    background-color: var(--priority-low-bg);
+    color: var(--priority-low-text);
+    border: 1px solid var(--priority-low-border);
+}
+
+/* Event Schedule Card Left Accent Bars */
+.schedule-card-high {
+    border-left: 3.5px solid var(--priority-high-dot) !important;
+}
+
+.schedule-card-medium {
+    border-left: 3.5px solid var(--priority-med-dot) !important;
+}
+
+.schedule-card-low {
+    border-left: 3.5px solid var(--priority-low-dot) !important;
+}
+
+/* ==========================================================================
+   Engraved / Debossed Welcome Screen
+   ========================================================================== */
+.engraved-welcome-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 380px;
+    height: 100%;
+    margin: auto 0;
+    text-align: center;
+    padding: 3.5rem 1.5rem;
+    user-select: none;
+    animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.engraved-welcome-icon {
+    font-size: 2.25rem;
+    color: rgba(67, 106, 78, 0.38);
+    text-shadow: 
+        0px -1px 1px rgba(20, 40, 24, 0.35),
+        0px 1.5px 2px rgba(255, 255, 255, 0.95);
+    margin-bottom: 1.25rem;
+    transition: transform 0.3s ease;
+}
+
+.engraved-welcome-icon:hover {
+    transform: scale(1.06);
+}
+
+.engraved-welcome-text {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: clamp(2.25rem, 5vw, 3.5rem);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.18;
+    color: rgba(74, 67, 57, 0.42);
+    /* Debossed / Engraved dual shading: dark top/interior shade + crisp bottom bevel reflection */
+    text-shadow: 
+        0px -1.5px 1.5px rgba(25, 22, 17, 0.45),
+        0px 1.5px 2px rgba(255, 255, 255, 0.95);
+}
+
+.engraved-welcome-subtext {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: rgba(130, 119, 102, 0.5);
+    text-shadow: 
+        0px -1px 1px rgba(25, 22, 17, 0.25),
+        0px 1px 1px rgba(255, 255, 255, 0.9);
+    margin-top: 1rem;
+}
+
+.engraved-welcome-ornament {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 1.5rem;
+    opacity: 0.4;
+}
+
+.engraved-welcome-ornament .ornament-line {
+    width: 54px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(90, 82, 69, 0.6), transparent);
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.85);
+}
+

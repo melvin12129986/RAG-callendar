@@ -1,0 +1,16 @@
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.env
+.env.*
+!.env.example
+token.json
+credentials.json
+.git
+.gitignore
+.pytest_cache
+.gemini
+tests/
+venv/
+.venv/
