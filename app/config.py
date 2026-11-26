@@ -5,12 +5,20 @@ from dotenv import load_dotenv
 
 load_dotenv(override=True)
 
+def _parse_port(raw: Optional[str], default: int = 8000) -> int:
+    if not raw:
+        return default
+    clean = str(raw).strip().strip("'\"")
+    if clean.isdigit():
+        return int(clean)
+    return default
+
 @dataclass
 class Settings:
     APP_NAME: str = "BERT Calendar RAG & Groq AI Reasoning"
     ENVIRONMENT: str = os.getenv("ENVIRONMENT", "development")
     HOST: str = os.getenv("HOST", "0.0.0.0")
-    PORT: int = int(os.getenv("PORT", "8000"))
+    PORT: int = _parse_port(os.getenv("PORT"), 8000)
     
     # Groq Settings (Free 14,400 requests/day, Ultra-low latency)
     GROQ_API_KEY: str = os.getenv("GROQ_API_KEY", "")
