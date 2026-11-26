@@ -72,7 +72,7 @@ class AIService:
             f"You are specialized exclusively as a Calendar and Schedule Assistant. "
             f"If the user wants to talk just answer them but dont do any action unless told to. " 
             f"If the user asks questions completely unrelated to calendar management, schedules, meetings, events, appointments, or time planning "
-            f"(such as writing code, solving math, homework, recipes, essays, general history, trivia, or politics), you MUST decline politely: "
+            f"you MUST decline politely: "
             f"'I am specialized exclusively as your Calendar and Schedule Assistant. I can only assist with your calendar events, meetings, and schedule planning. How can I help with your schedule today?'\n\n"
             f"Keep your answers concise, helpful, and natural."
         )

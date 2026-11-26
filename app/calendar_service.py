@@ -286,17 +286,17 @@ class CalendarService:
                 pass
         return True
 
-    def list_events(self, max_results: int = 50) -> List[Dict[str, Any]]:
+    def list_events(self, max_results: int = 250) -> List[Dict[str, Any]]:
         """Fetches events from Google Calendar API or the in-memory store."""
         if self.is_connected_to_google:
             try:
-                # Time range: from today onwards
-                now = datetime.datetime.utcnow().isoformat() + "Z"
+                # Time range: past 1 year to include all historical, current and future events
+                past_window = (datetime.datetime.utcnow() - datetime.timedelta(days=365)).isoformat() + "Z"
                 items = []
                 if self.service:
                     events_result = self.service.events().list(
                         calendarId="primary",
-                        timeMin=now,
+                        timeMin=past_window,
                         maxResults=max_results,
                         singleEvents=True,
                         orderBy="startTime"
@@ -305,7 +305,7 @@ class CalendarService:
                 elif getattr(self, "access_token", None):
                     import requests
                     r = requests.get(
-                        f"https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin={now}&maxResults={max_results}&singleEvents=true&orderBy=startTime",
+                        f"https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin={past_window}&maxResults={max_results}&singleEvents=true&orderBy=startTime",
                         headers={"Authorization": f"Bearer {self.access_token}"},
                         timeout=10
                     )
@@ -323,6 +323,13 @@ class CalendarService:
                         else:
                             p = "medium"
                     item["priority"] = p
+                    st = item.get("start", {}).get("dateTime") or item.get("start", {}).get("date")
+                    et = item.get("end", {}).get("dateTime") or item.get("end", {}).get("date") or st
+                    if st:
+                        item["start_time"] = st
+                        item["date_time"] = st
+                    if et:
+                        item["end_time"] = et
                 return items
             except Exception as e:
                 logger.error(f"Error fetching from Google Calendar: {e}")

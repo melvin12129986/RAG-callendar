@@ -169,7 +169,7 @@ async def connect_google_via_token(req: GoogleTokenAuthRequest):
             logger.info(f"Google Calendar connected! Fetching live events for {uid}...")
             
             # Fetch all live events from Google Calendar immediately on every connect
-            gcal_events = calendar_service.list_events(max_results=100)
+            gcal_events = calendar_service.list_events(max_results=250)
             imported_count = 0
             for ev in gcal_events:
                 ev["user_id"] = uid
@@ -357,22 +357,52 @@ async def list_calendar_events(request: Request):
         current_email = (user_id or "").strip().lower()
         if gcal_email and current_email == gcal_email:
             try:
-                gcal_events = calendar_service.list_events()
+                gcal_events = calendar_service.list_events(max_results=250)
                 for ev in gcal_events:
                     ev_id = ev.get("id")
                     if ev_id not in events_map:
                         ev["user_id"] = user_id
                         events_map[ev_id] = ev
+                        # Persist live Google events to Supabase for the user
+                        if supabase_service.is_connected:
+                            try:
+                                supabase_service.create_event(ev, user_id=user_id)
+                            except Exception:
+                                pass
             except Exception as ge:
                 logger.warning(f"Live Google Calendar fetch notice: {ge}")
 
     # 3. Fallback to local store ONLY if neither Supabase nor Google is connected
     if not events_map and not supabase_service.is_connected and not calendar_service.is_connected_to_google:
-        for ev in calendar_service.list_events():
+        for ev in calendar_service.list_events(max_results=250):
             if ev.get("user_id", "guest") == user_id:
                 events_map[ev["id"]] = ev
 
     all_events = list(events_map.values())
+
+    # Normalize dates on every event so UI and BERT always receive structured start/end objects
+    for ev in all_events:
+        st = ev.get("start_time") or ev.get("date_time")
+        if not st and isinstance(ev.get("start"), dict):
+            st = ev["start"].get("dateTime") or ev["start"].get("date")
+        et = ev.get("end_time")
+        if not et and isinstance(ev.get("end"), dict):
+            et = ev["end"].get("dateTime") or ev["end"].get("date")
+        if not et:
+            et = st
+
+        is_all_day = bool(st and len(str(st).strip()) == 10 and "-" in str(st))
+        if not isinstance(ev.get("start"), dict):
+            ev["start"] = {"date": str(st).strip()[:10]} if is_all_day else {"dateTime": st}
+        if not isinstance(ev.get("end"), dict):
+            ev["end"] = {"date": str(et).strip()[:10]} if is_all_day else {"dateTime": et}
+
+        if "start_time" not in ev or not ev["start_time"]:
+            ev["start_time"] = st
+        if "end_time" not in ev or not ev["end_time"]:
+            ev["end_time"] = et
+        if "date_time" not in ev or not ev["date_time"]:
+            ev["date_time"] = st
 
     # Sort events by start date/time
     def get_sort_key(e):
@@ -578,7 +608,7 @@ def determine_intent(query: str, chat_history: List[Dict[str, Any]] = None) -> s
 
     # 2. DATA_RELATED intent: query about existing calendar data or update/delete existing events
     data_patterns = [
-        r"\b(what('?s| do i have| is on my| are my)|when is|when do i|do i have|any events|any meetings|list my|show my|check my|my schedule|agenda|free time|conflicts?|upcoming|calendar)\b",
+        r"\b(what('?s|\s+is|\s+do i have|\s+is on my|\s+are my)|when is|when do i|do i have|is there|any events|any meetings|list my|show my|check my|my schedule|agenda|free time|conflicts?|upcoming|calendar|scheduled|schedule)\b",
         r"\b(did you schedule|is it scheduled|you didn'?t schedule[ds]?|not scheduled|not added|wasn'?t scheduled|wasn'?t added|scheduled it)\b",
         r"\b(search|find|lookup|retrieve)\b",
         r"\b(events?|meetings?|appointments?)\b",
@@ -645,11 +675,7 @@ async def chat_and_reason(req: ChatRequest, request: Request):
 
     # Flow 2: DATA_RELATED (run BERT retrieval; if no match, respond "sorry no data")
     elif intent == "DATA_RELATED":
-        retrieval_query = req.query
-        if chat_history:
-            last_msg = chat_history[-1].get("message", "")
-            if last_msg:
-                retrieval_query = f"{req.query} {last_msg[:100]}"
+        retrieval_query = req.query.strip()
 
         logger.info(f"[{user_id}] BERT retrieval for data-related query: '{retrieval_query}'")
         raw_matches = hashed_table.query_similarity(retrieval_query, user_id=user_id, top_k=req.top_k or 4)

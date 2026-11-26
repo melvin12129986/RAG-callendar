@@ -28,6 +28,23 @@ function authFetch(url, options = {}) {
     return fetch(url, options);
 }
 
+// Event date & time extraction helpers (supports both nested Google objects and flat Supabase DB rows)
+function getEventStartRaw(ev) {
+    if (!ev) return "";
+    return ev.start?.dateTime || ev.start?.date || ev.start_time || ev.date_time || "";
+}
+
+function getEventEndRaw(ev) {
+    if (!ev) return "";
+    return ev.end?.dateTime || ev.end?.date || ev.end_time || getEventStartRaw(ev);
+}
+
+function getEventYmd(ev) {
+    const raw = getEventStartRaw(ev);
+    if (!raw) return "";
+    return raw.substring(0, 10);
+}
+
 // Calendar Grid State
 let calCurrentYear = new Date().getFullYear();
 let calCurrentMonth = new Date().getMonth(); // 0-indexed (0 = Jan, 9 = Oct)
@@ -134,11 +151,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     setupGoogleAuthHandlers();
     setupChangePasswordHandlers();
 
-    // 1. Resolve auth state immediately before loading data
-    await checkInitialAuthState();
-
-    // 2. Fetch system status
+    // 1. Fetch system status (and configure Supabase client if available)
     await fetchStatus();
+
+    // 2. Resolve auth state immediately before loading data
+    await checkInitialAuthState();
 
     // 3. Load all user data
     await reloadAllUserData();
@@ -245,8 +262,17 @@ async function checkInitialAuthState() {
             const { data, error } = await supabaseClient.auth.exchangeCodeForSession(code);
             if (data && data.session && data.session.user) {
                 applyUserSession(data.session.user);
+                if (data.session.provider_token) {
+                    localStorage.setItem("google_provider_token", data.session.provider_token);
+                    if (data.session.provider_refresh_token) {
+                        localStorage.setItem("google_provider_refresh_token", data.session.provider_refresh_token);
+                    }
+                    syncGoogleCalendarFromToken(data.session.provider_token);
+                }
                 window.history.replaceState({}, document.title, window.location.pathname);
                 showToast(`Signed in as ${data.session.user.email}`);
+                await fetchStatus();
+                await reloadAllUserData();
                 return;
             }
         } catch (err) {
@@ -378,11 +404,15 @@ function initSupabaseAuthListener() {
         if (session && session.user) {
             applyUserSession(session.user);
             showToast(`Signed in as ${session.user.email}`);
-            await reloadAllUserData();
 
             if (session.provider_token) {
-                syncGoogleCalendarFromToken(session.provider_token);
+                localStorage.setItem("google_provider_token", session.provider_token);
+                if (session.provider_refresh_token) {
+                    localStorage.setItem("google_provider_refresh_token", session.provider_refresh_token);
+                }
+                await syncGoogleCalendarFromToken(session.provider_token);
             }
+            await reloadAllUserData();
         } else if (event === "SIGNED_OUT") {
             handleSignOutCleanup();
             showToast("Signed out. Switched to guest workspace.");
@@ -404,8 +434,27 @@ function handleSignOutCleanup() {
 }
 
 async function syncGoogleCalendarFromToken(providerToken) {
+    if (!providerToken) return;
     try {
-        const url = `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${new Date().toISOString()}&maxResults=30&singleEvents=true&orderBy=startTime`;
+        // First, notify backend to connect live Google Calendar and index events
+        try {
+            await fetch("/api/calendar/auth/google_token", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    provider_token: providerToken,
+                    user_email: currentUserEmail,
+                    refresh_token: localStorage.getItem("google_provider_refresh_token") || null
+                })
+            });
+        } catch (be) {
+            console.warn("Backend token connect notice:", be);
+        }
+
+        // Also fetch directly from Google API (1 year past to future) to ensure comprehensive sync
+        const pastDate = new Date();
+        pastDate.setFullYear(pastDate.getFullYear() - 1);
+        const url = `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${pastDate.toISOString()}&maxResults=250&singleEvents=true&orderBy=startTime`;
         const res = await fetch(url, {
             headers: { "Authorization": `Bearer ${providerToken}` }
         });
@@ -627,9 +676,8 @@ function renderCalendarMonthGrid() {
     // Map events by date (YYYY-MM-DD)
     const eventsByDate = {};
     calendarEvents.forEach(ev => {
-        const startRaw = ev.start?.dateTime || ev.start?.date || "";
-        if (startRaw) {
-            const ymd = startRaw.substring(0, 10);
+        const ymd = getEventYmd(ev);
+        if (ymd) {
             if (!eventsByDate[ymd]) eventsByDate[ymd] = [];
             eventsByDate[ymd].push(ev);
         }
@@ -771,8 +819,7 @@ function renderSelectedDaySchedule(ymd) {
 
     // Filter events for this day
     const dayEvents = calendarEvents.filter(ev => {
-        const startRaw = ev.start?.dateTime || ev.start?.date || "";
-        return startRaw.startsWith(ymd);
+        return getEventYmd(ev) === ymd;
     });
 
     if (dayEvents.length === 0) {
@@ -790,8 +837,8 @@ function renderSelectedDaySchedule(ymd) {
     }
 
     calSelectedDayEventsList.innerHTML = dayEvents.map(ev => {
-        const startRaw = ev.start?.dateTime || ev.start?.date || "";
-        const endRaw = ev.end?.dateTime || ev.end?.date || "";
+        const startRaw = getEventStartRaw(ev);
+        const endRaw = getEventEndRaw(ev);
         const timeFormatted = formatTimeString(startRaw, endRaw);
         const priority = (ev.priority || "medium").toLowerCase();
 
@@ -859,8 +906,8 @@ function renderAgendaList() {
     }
 
     calendarEventsList.innerHTML = calendarEvents.map(ev => {
-        const startRaw = ev.start?.dateTime || ev.start?.date || "";
-        const endRaw = ev.end?.dateTime || ev.end?.date || "";
+        const startRaw = getEventStartRaw(ev);
+        const endRaw = getEventEndRaw(ev);
         const dateObj = startRaw ? new Date(startRaw) : new Date();
         const monthShort = dateObj.toLocaleDateString(undefined, { month: 'short' });
         const dayNum = dateObj.getDate();
