@@ -952,3 +952,8 @@ async def root():
     if os.path.exists(index_file):
         return FileResponse(index_file, headers={"Cache-Control": "no-cache, no-store, must-revalidate"})
     return {"message": "BERT Calendar RAG API running."}
+
+if __name__ == "__main__":
+    import uvicorn
+    from app.config import settings
+    uvicorn.run("app.main:app", host=settings.HOST, port=settings.PORT)
