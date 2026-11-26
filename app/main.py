@@ -595,6 +595,15 @@ def determine_intent(query: str, chat_history: List[Dict[str, Any]] = None) -> s
     """
     q = query.lower().strip()
     
+    # 0. Date & Time awareness: questions asking for current date, today's date, or time
+    date_time_patterns = [
+        r"\b(what('?s|\s+is)?\s+(today('?s)?\s+)?(the\s+)?date)\b",
+        r"\b(today('?s)?\s+date|what\s+date|current\s+date|date\s+today)\b",
+        r"\b(what\s+day(\s+is\s+it)?|what\s+time(\s+is\s+it)?|current\s+time|time\s+now)\b"
+    ]
+    if any(re.search(pat, q) for pat in date_time_patterns):
+        return "GENERAL"
+
     # 1. CREATE intent: user wants to schedule/create/add a new event
     create_patterns = [
         r"\b(schedule|book|add|create|make|set up|insert)\b.*\b(event|meeting|appointment|call|session|lunch|dinner|breakfast|reminder|task|slot|date)\b",
@@ -691,13 +700,19 @@ async def chat_and_reason(req: ChatRequest, request: Request):
         if is_broad_schedule_inquiry and raw_matches:
             meaningful_matches = raw_matches
 
-        # If no matching data found in the calendar
+        # If no matching data found in the calendar, let conversational engine respond naturally
         if not meaningful_matches:
-            no_data_reply = "Sorry, there is no available data or matching events in your calendar for that."
+            reasoning_result = await asyncio.to_thread(
+                ai_service.chat_regular,
+                req.query,
+                [],
+                chat_history
+            )
+            response_text = reasoning_result.get("response_text", "I couldn't find any matching events in your calendar.")
             supabase_service.save_chat_message(
                 user_id=user_id,
                 sender="ai",
-                message=no_data_reply,
+                message=response_text,
                 metadata={"action": "NONE"}
             )
             return {
@@ -705,10 +720,10 @@ async def chat_and_reason(req: ChatRequest, request: Request):
                 "user_id": user_id,
                 "is_calendar_task": True,
                 "retrieved_matches": [],
-                "reasoning": "BERT forward pass found no matching calendar records for the query.",
-                "response": no_data_reply,
-                "ai_powered": True,
-                "ai_provider": "Groq",
+                "reasoning": reasoning_result.get("reasoning", "No close semantic hash matches found; provided conversational reply."),
+                "response": response_text,
+                "ai_powered": reasoning_result.get("ai_powered", False),
+                "ai_provider": reasoning_result.get("ai_provider", "Groq"),
                 "ai_model": settings.GROQ_MODEL,
                 "action": "NONE",
                 "executed_action": None
